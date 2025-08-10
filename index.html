@@ -137,7 +137,6 @@
         let currentQuestionIndex = 0;
         let appData = { questions: {}, chapters: {} };
         let prefetchedData = { explanation: null, memoryAid: null, audio: null };
-        const apiKey = APIKEY;
         const STORAGE_KEY = 'quizQuestAdvancedData';
         const srsIntervals = [1, 2, 4, 8, 16, 32, 64, 128];
 
@@ -383,16 +382,20 @@
 
         async function fetchAIHelper(type, question) {
             let prompt = '';
+            let model = 'gemini-2.5-flash-preview-05-20';
             if (type === 'explanation') {
                 prompt = `You are a helpful study assistant. For the following multiple-choice question, please provide a clear and concise explanation for why the correct answer is right. Do not just restate the answer. Explain the underlying concept in a simple way.\n\nQuestion: ${question.Question}\nCorrect Answer: ${question.CorrectAnswer}\n\nExplanation:`;
             } else { // memoryAid
                 prompt = `You are a creative memory coach. For the following question and answer, invent a clever and simple mnemonic, a funny story, a weird mental image, or another memorable trick to help a student remember the answer. Be creative and concise.\n\nQuestion: "${question.Question}"\nAnswer: "${question.CorrectAnswer}"\n\nMemory Trick:`;
             }
             try {
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                const payload = { contents: [{ parts: [{ text: prompt }] }] };
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API call failed`);
+                const serverlessUrl = '/.netlify/functions/gemini';
+                const requestBody = {
+                    model: model,
+                    payload: { contents: [{ parts: [{ text: prompt }] }] }
+                };
+                const response = await fetch(serverlessUrl, { method: 'POST', body: JSON.stringify(requestBody) });
+                if (!response.ok) throw new Error(`Serverless function failed`);
                 const result = await response.json();
                 return result.candidates[0].content.parts[0].text;
             } catch (error) {
@@ -429,17 +432,20 @@
         
         async function fetchTTS(text) {
             try {
-                const payload = {
-                    contents: [{ parts: [{ text: `Say in a friendly, Indian-English accent: ${text}` }] }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Achird" } } }
-                    },
-                    model: "gemini-2.5-flash-preview-tts"
+                const serverlessUrl = '/.netlify/functions/gemini';
+                const requestBody = {
+                    model: 'gemini-2.5-flash-preview-tts',
+                    payload: {
+                        contents: [{ parts: [{ text: `Say in a friendly, Indian-English accent: ${text}` }] }],
+                        generationConfig: {
+                            responseModalities: ["AUDIO"],
+                            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Achird" } } }
+                        },
+                        model: "gemini-2.5-flash-preview-tts"
+                    }
                 };
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error('TTS API call failed');
+                const response = await fetch(serverlessUrl, { method: 'POST', body: JSON.stringify(requestBody) });
+                if (!response.ok) throw new Error('TTS Serverless function failed');
                 
                 const result = await response.json();
                 const audioData = result.candidates[0].content.parts[0].inlineData.data;
