@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizQuest - Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+        .text-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        /* Simple fade transition for the main card */
+        .quiz-card {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .loading {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <main id="app-container" class="w-full max-w-md mx-auto">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center">
+            <h1 class="text-4xl font-extrabold text-gradient bg-gradient-to-r from-cyan-400 to-blue-500 mb-4">QuizQuest</h1>
+            <p class="text-gray-400">Loading your learning quest...</p>
+        </div>
+
+        <!-- Quiz Card -->
+        <div id="quiz-card" class="hidden quiz-card bg-gray-800 p-5 rounded-xl shadow-2xl border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-cyan-400">Chapter: <span id="chapter-name"></span></h2>
+                <div id="due-counter" class="text-sm text-gray-400 bg-gray-700 px-3 py-1 rounded-full"></div>
+            </div>
+            
+            <p id="question-text" class="text-xl my-6 text-white"></p>
+            
+            <div id="options-container" class="grid grid-cols-1 gap-3">
+                <!-- Option buttons will be injected here -->
+            </div>
+            
+            <div id="feedback-container" class="mt-6 text-lg h-8 font-semibold text-center"></div>
+            
+            <div id="srs-buttons-container" class="hidden mt-4 grid grid-cols-2 gap-3">
+                <button id="srs-revision-btn" class="bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">🤔 Needs Revision</button>
+                <button id="srs-know-btn" class="bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">👍 I know this</button>
+            </div>
+        </div>
+
+        <!-- All Done State -->
+        <div id="all-done-state" class="hidden text-center">
+             <h1 class="text-4xl font-extrabold text-gradient bg-gradient-to-r from-green-400 to-emerald-500 mb-4">All Done!</h1>
+             <p class="text-gray-400">You've reviewed all due questions. Great job! Come back tomorrow for more.</p>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DOM Elements ---
+        const loadingState = document.getElementById('loading-state');
+        const quizCard = document.getElementById('quiz-card');
+        const allDoneState = document.getElementById('all-done-state');
+        const chapterName = document.getElementById('chapter-name');
+        const dueCounter = document.getElementById('due-counter');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const srsButtonsContainer = document.getElementById('srs-buttons-container');
+        const srsRevisionBtn = document.getElementById('srs-revision-btn');
+        const srsKnowBtn = document.getElementById('srs-know-btn');
+        
+        // --- App State ---
+        let allQuestions = [];
+        let dueQuestions = [];
+        let currentQuestionIndex = 0;
+        const STORAGE_KEY = 'quizQuestMobileData';
+        const srsIntervals = [1, 2, 4, 8, 16, 32, 64, 128]; // Days
+
+        // --- Event Listeners ---
+        srsRevisionBtn.addEventListener('click', () => handleSrsRating(true));
+        srsKnowBtn.addEventListener('click', () => handleSrsRating(false));
+        window.addEventListener('load', initializeApp);
+
+        // --- Initialization ---
+        async function initializeApp() {
+            try {
+                // FIX: Use a relative path specifier './' to ensure the file is found correctly.
+                const response = await fetch('./questions.json');
+                if (!response.ok) throw new Error('questions.json not found.');
+                const rawQuestions = await response.json();
+                
+                loadProgressAndMerge(rawQuestions);
+                
+                startQuiz();
+            } catch (error) {
+                loadingState.innerHTML = `<p class="text-red-400">Error: Could not load questions. Make sure 'questions.json' is in the same folder.</p>`;
+                console.error(error);
+            }
+        }
+
+        function loadProgressAndMerge(rawQuestions) {
+            const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            
+            allQuestions = rawQuestions.map((rawQ, index) => {
+                const id = `${rawQ.Chapter}-${index}`;
+                const progress = savedProgress[id] || { srsLevel: 0, nextReviewDate: Date.now() };
+                
+                return {
+                    id: id,
+                    chapter: rawQ.Chapter,
+                    question: rawQ.Question,
+                    options: rawQ.Options,
+                    correctAnswer: rawQ.CorrectAnswer,
+                    ...progress
+                };
+            });
+        }
+        
+        function saveProgress() {
+            const progressToSave = allQuestions.reduce((acc, q) => {
+                acc[q.id] = {
+                    srsLevel: q.srsLevel,
+                    nextReviewDate: q.nextReviewDate
+                };
+                return acc;
+            }, {});
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(progressToSave));
+        }
+
+        // --- Quiz Logic ---
+        function startQuiz() {
+            const now = Date.now();
+            dueQuestions = allQuestions
+                .filter(q => q.nextReviewDate <= now)
+                .sort((a, b) => a.srsLevel - b.srsLevel);
+
+            loadingState.style.display = 'none';
+
+            if (dueQuestions.length === 0) {
+                allDoneState.classList.remove('hidden');
+                return;
+            }
+            
+            currentQuestionIndex = 0;
+            quizCard.classList.remove('hidden');
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            quizCard.classList.add('loading');
+            
+            // Wait for the fade-out transition to finish before updating content
+            setTimeout(() => {
+                feedbackContainer.innerHTML = '';
+                srsButtonsContainer.classList.add('hidden');
+                
+                const currentQuestion = dueQuestions[currentQuestionIndex];
+                chapterName.textContent = currentQuestion.chapter;
+                questionText.textContent = currentQuestion.question;
+                dueCounter.textContent = `${currentQuestionIndex + 1} / ${dueQuestions.length}`;
+                optionsContainer.innerHTML = '';
+                
+                const options = [...currentQuestion.options].filter(o => o);
+                options.sort(() => Math.random() - 0.5); // Shuffle options
+                
+                options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.textContent = option;
+                    button.className = 'w-full bg-gray-700 p-4 rounded-lg text-left hover:bg-cyan-500/20 hover:border-cyan-400 border-2 border-transparent transition-all duration-200';
+                    button.addEventListener('click', handleOptionClick);
+                    optionsContainer.appendChild(button);
+                });
+
+                quizCard.classList.remove('loading');
+            }, 150);
+        }
+
+        function handleOptionClick(event) {
+            const selectedButton = event.target;
+            const selectedAnswer = selectedButton.textContent;
+            const currentQuestion = dueQuestions[currentQuestionIndex];
+            const correctAnswer = currentQuestion.correctAnswer;
+            
+            const isCorrect = selectedAnswer.trim() === correctAnswer.trim();
+
+            const optionButtons = optionsContainer.querySelectorAll('button');
+            optionButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent.trim() === correctAnswer.trim()) {
+                    btn.className = 'w-full bg-green-500/30 border-green-500 border-2 p-4 rounded-lg text-left';
+                }
+            });
+
+            if (isCorrect) {
+                feedbackContainer.textContent = 'Correct! 🎉';
+                feedbackContainer.className = 'mt-6 text-lg h-8 font-semibold text-center text-green-400';
+            } else {
+                selectedButton.className = 'w-full bg-red-500/30 border-red-500 border-2 p-4 rounded-lg text-left';
+                feedbackContainer.textContent = 'Not quite!';
+                feedbackContainer.className = 'mt-6 text-lg h-8 font-semibold text-center text-red-400';
+            }
+            
+            srsButtonsContainer.classList.remove('hidden');
+        }
+
+        function handleSrsRating(needsRevision) {
+            const currentDBQuestion = allQuestions.find(q => q.id === dueQuestions[currentQuestionIndex].id);
+            
+            if (needsRevision) {
+                currentDBQuestion.srsLevel = 0;
+            } else {
+                currentDBQuestion.srsLevel = Math.min(currentDBQuestion.srsLevel + 1, srsIntervals.length - 1);
+            }
+            
+            const daysToAdd = srsIntervals[currentDBQuestion.srsLevel];
+            const oneDayInMillis = 24 * 60 * 60 * 1000;
+            currentDBQuestion.nextReviewDate = Date.now() + (daysToAdd * oneDayInMillis);
+            
+            saveProgress();
+            
+            currentQuestionIndex++;
+            if (currentQuestionIndex < dueQuestions.length) {
+                displayQuestion();
+            } else {
+                quizCard.classList.add('hidden');
+                allDoneState.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
