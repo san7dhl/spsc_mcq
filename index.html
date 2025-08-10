@@ -3,73 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizQuest - Mobile</title>
+    <title>QuizQuest - Advanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+            touch-action: manipulation;
         }
         .text-gradient {
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
         }
-        /* Simple fade transition for the main card */
-        .quiz-card {
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        .section {
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
-        .loading {
+        .section-hidden {
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.98);
+            display: none;
+        }
+        .loader {
+            border: 3px solid #f3f3f340;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 text-gray-200 flex items-start justify-center min-h-screen p-4">
 
     <main id="app-container" class="w-full max-w-md mx-auto">
         
         <!-- Loading State -->
-        <div id="loading-state" class="text-center">
+        <div id="loading-state" class="text-center mt-20">
             <h1 class="text-4xl font-extrabold text-gradient bg-gradient-to-r from-cyan-400 to-blue-500 mb-4">QuizQuest</h1>
             <p class="text-gray-400">Loading your learning quest...</p>
         </div>
 
-        <!-- Quiz Card -->
-        <div id="quiz-card" class="hidden quiz-card bg-gray-800 p-5 rounded-xl shadow-2xl border border-gray-700">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-cyan-400">Chapter: <span id="chapter-name"></span></h2>
-                <div id="due-counter" class="text-sm text-gray-400 bg-gray-700 px-3 py-1 rounded-full"></div>
+        <!-- Chapter Selection / Dashboard -->
+        <div id="home-screen" class="section section-hidden">
+            <h2 class="text-2xl font-bold text-white mb-4">Choose a Chapter</h2>
+            
+            <!-- Suggestion Box -->
+            <div id="suggestion-box" class="hidden bg-yellow-500/10 border border-yellow-500 text-yellow-300 p-4 rounded-lg mb-6">
+                <h3 class="font-bold mb-1">Study Suggestion</h3>
+                <p id="suggestion-text" class="text-sm"></p>
             </div>
-            
-            <p id="question-text" class="text-xl my-6 text-white"></p>
-            
-            <div id="options-container" class="grid grid-cols-1 gap-3">
-                <!-- Option buttons will be injected here -->
-            </div>
-            
-            <div id="feedback-container" class="mt-6 text-lg h-8 font-semibold text-center"></div>
-            
-            <div id="srs-buttons-container" class="hidden mt-4 grid grid-cols-2 gap-3">
-                <button id="srs-revision-btn" class="bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">🤔 Needs Revision</button>
-                <button id="srs-know-btn" class="bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">👍 I know this</button>
+
+            <div id="chapter-list" class="space-y-3">
+                <!-- Chapter cards will be injected here -->
             </div>
         </div>
 
-        <!-- All Done State -->
-        <div id="all-done-state" class="hidden text-center">
-             <h1 class="text-4xl font-extrabold text-gradient bg-gradient-to-r from-green-400 to-emerald-500 mb-4">All Done!</h1>
-             <p class="text-gray-400">You've reviewed all due questions. Great job! Come back tomorrow for more.</p>
-        </div>
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="section section-hidden">
+            <div class="bg-gray-800 p-5 rounded-xl shadow-2xl border border-gray-700 relative">
+                <!-- Back Arrow Button -->
+                <button id="back-to-home-btn" class="absolute top-4 left-4 p-2 text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </button>
 
+                <div class="flex justify-between items-center mb-4 pt-8">
+                    <h2 class="text-lg font-bold text-cyan-400">Chapter: <span id="chapter-name"></span></h2>
+                    <div id="due-counter" class="text-sm text-gray-400 bg-gray-700 px-3 py-1 rounded-full"></div>
+                </div>
+                
+                <p id="question-text" class="text-xl my-6 text-white"></p>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+                
+                <div id="feedback-container" class="mt-6 text-lg h-8 font-semibold text-center"></div>
+                
+                <div id="srs-buttons-container" class="hidden mt-4 grid grid-cols-2 gap-3">
+                    <button id="srs-revision-btn" class="bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">🤔 Needs Revision</button>
+                    <button id="srs-know-btn" class="bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base">👍 I know this</button>
+                </div>
+
+                <div id="ai-buttons-container" class="hidden mt-4 flex justify-center gap-4">
+                    <button id="remember-btn" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-700">🧠 Remember</button>
+                    <button id="explain-btn" class="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700">✨ Explain</button>
+                </div>
+
+                <div id="ai-helper-container" class="hidden mt-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700">
+                    <div class="flex justify-between items-start">
+                        <p id="ai-helper-text" class="text-gray-300 whitespace-pre-wrap flex-1 mr-2"></p>
+                        <button id="tts-btn" class="p-2 rounded-full hover:bg-gray-700">
+                            <div id="tts-loader" class="hidden loader"></div>
+                            <svg id="tts-icon" class="w-6 h-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
         // --- DOM Elements ---
         const loadingState = document.getElementById('loading-state');
-        const quizCard = document.getElementById('quiz-card');
-        const allDoneState = document.getElementById('all-done-state');
+        const homeScreen = document.getElementById('home-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const chapterList = document.getElementById('chapter-list');
+        const suggestionBox = document.getElementById('suggestion-box');
+        const suggestionText = document.getElementById('suggestion-text');
         const chapterName = document.getElementById('chapter-name');
         const dueCounter = document.getElementById('due-counter');
         const questionText = document.getElementById('question-text');
@@ -78,30 +121,44 @@
         const srsButtonsContainer = document.getElementById('srs-buttons-container');
         const srsRevisionBtn = document.getElementById('srs-revision-btn');
         const srsKnowBtn = document.getElementById('srs-know-btn');
-        
+        const aiButtonsContainer = document.getElementById('ai-buttons-container');
+        const rememberBtn = document.getElementById('remember-btn');
+        const explainBtn = document.getElementById('explain-btn');
+        const aiHelperContainer = document.getElementById('ai-helper-container');
+        const aiHelperText = document.getElementById('ai-helper-text');
+        const ttsBtn = document.getElementById('tts-btn');
+        const ttsIcon = document.getElementById('tts-icon');
+        const ttsLoader = document.getElementById('tts-loader');
+        const backToHomeBtn = document.getElementById('back-to-home-btn');
+
         // --- App State ---
         let allQuestions = [];
-        let dueQuestions = [];
+        let sessionQuestions = [];
         let currentQuestionIndex = 0;
-        const STORAGE_KEY = 'quizQuestMobileData';
-        const srsIntervals = [1, 2, 4, 8, 16, 32, 64, 128]; // Days
+        let appData = { questions: {}, chapters: {} };
+        let prefetchedData = { explanation: null, memoryAid: null, audio: null };
+        const apiKey = APIKEY;
+        const STORAGE_KEY = 'quizQuestAdvancedData';
+        const srsIntervals = [1, 2, 4, 8, 16, 32, 64, 128];
 
         // --- Event Listeners ---
         srsRevisionBtn.addEventListener('click', () => handleSrsRating(true));
         srsKnowBtn.addEventListener('click', () => handleSrsRating(false));
+        explainBtn.addEventListener('click', () => showAIAssistance('explanation'));
+        rememberBtn.addEventListener('click', () => showAIAssistance('memoryAid'));
+        ttsBtn.addEventListener('click', handleTTS);
+        backToHomeBtn.addEventListener('click', showHomeScreen);
         window.addEventListener('load', initializeApp);
 
-        // --- Initialization ---
+        // --- Initialization & Data Management ---
         async function initializeApp() {
             try {
-                // FIX: Use a relative path specifier './' to ensure the file is found correctly.
                 const response = await fetch('./questions.json');
                 if (!response.ok) throw new Error('questions.json not found.');
                 const rawQuestions = await response.json();
                 
                 loadProgressAndMerge(rawQuestions);
-                
-                startQuiz();
+                showHomeScreen();
             } catch (error) {
                 loadingState.innerHTML = `<p class="text-red-400">Error: Could not load questions. Make sure 'questions.json' is in the same folder.</p>`;
                 console.error(error);
@@ -109,89 +166,133 @@
         }
 
         function loadProgressAndMerge(rawQuestions) {
-            const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+            appData.questions = savedData.questions || {};
+            appData.chapters = savedData.chapters || {};
             
+            const chapters = [...new Set(rawQuestions.map(q => q.Chapter))];
+            chapters.forEach(chapter => {
+                if (!appData.chapters[chapter]) {
+                    appData.chapters[chapter] = { score: 0 };
+                }
+            });
+
             allQuestions = rawQuestions.map((rawQ, index) => {
                 const id = `${rawQ.Chapter}-${index}`;
-                const progress = savedProgress[id] || { srsLevel: 0, nextReviewDate: Date.now() };
-                
-                return {
-                    id: id,
-                    chapter: rawQ.Chapter,
-                    question: rawQ.Question,
-                    options: rawQ.Options,
-                    correctAnswer: rawQ.CorrectAnswer,
-                    ...progress
-                };
+                const progress = appData.questions[id] || { srsLevel: 0, nextReviewDate: Date.now() };
+                return { id, ...rawQ, ...progress };
             });
         }
         
         function saveProgress() {
-            const progressToSave = allQuestions.reduce((acc, q) => {
-                acc[q.id] = {
-                    srsLevel: q.srsLevel,
-                    nextReviewDate: q.nextReviewDate
-                };
-                return acc;
-            }, {});
+            const progressToSave = {
+                questions: allQuestions.reduce((acc, q) => {
+                    acc[q.id] = { srsLevel: q.srsLevel, nextReviewDate: q.nextReviewDate };
+                    return acc;
+                }, {}),
+                chapters: appData.chapters
+            };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(progressToSave));
         }
 
-        // --- Quiz Logic ---
-        function startQuiz() {
-            const now = Date.now();
-            dueQuestions = allQuestions
-                .filter(q => q.nextReviewDate <= now)
-                .sort((a, b) => a.srsLevel - b.srsLevel);
-
+        // --- UI Flow & Screens ---
+        function showHomeScreen() {
             loadingState.style.display = 'none';
+            quizScreen.classList.add('section-hidden');
+            homeScreen.classList.remove('section-hidden');
+            renderChapterList();
+            renderSuggestion();
+        }
 
-            if (dueQuestions.length === 0) {
-                allDoneState.classList.remove('hidden');
+        function renderChapterList() {
+            const chapters = [...new Set(allQuestions.map(q => q.Chapter))];
+            chapterList.innerHTML = '';
+            chapters.forEach(chapter => {
+                const chapterData = appData.chapters[chapter] || { score: 0 };
+                const totalInChapter = allQuestions.filter(q => q.Chapter === chapter).length;
+                const correctInChapter = allQuestions.filter(q => q.Chapter === chapter && q.srsLevel > 0).length;
+
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700';
+                card.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-lg text-white">${chapter}</h3>
+                        <p class="text-sm text-gray-400">
+                            Score: <span class="font-semibold ${chapterData.score > 0 ? 'text-green-400' : chapterData.score < 0 ? 'text-red-400' : ''}">${chapterData.score.toFixed(2)}</span> | 
+                            <span class="font-semibold text-white">${correctInChapter} / ${totalInChapter} Correct</span>
+                        </p>
+                    </div>
+                    <button data-chapter="${chapter}" class="start-quiz-btn bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-cyan-700 transition-all">Start Quiz</button>
+                `;
+                chapterList.appendChild(card);
+            });
+            document.querySelectorAll('.start-quiz-btn').forEach(btn => btn.addEventListener('click', startQuiz));
+        }
+
+        function renderSuggestion() {
+            const chaptersWithScores = Object.keys(appData.chapters);
+            if (chaptersWithScores.length < 2) {
+                suggestionBox.classList.add('hidden');
                 return;
             }
-            
+            const weakestChapter = chaptersWithScores.reduce((a, b) => appData.chapters[a].score < appData.chapters[b].score ? a : b);
+            suggestionText.textContent = `You might want to focus on the "${weakestChapter}" chapter next to improve your score.`;
+            suggestionBox.classList.remove('hidden');
+        }
+
+        // --- Quiz Logic ---
+        function startQuiz(event) {
+            const chapter = event.target.dataset.chapter;
+            const now = Date.now();
+            sessionQuestions = allQuestions
+                .filter(q => q.Chapter === chapter && q.nextReviewDate <= now)
+                .sort((a, b) => a.srsLevel - b.srsLevel);
+
+            if (sessionQuestions.length === 0) {
+                alert(`No questions are due for review in the "${chapter}" chapter. Great job!`);
+                return;
+            }
+
             currentQuestionIndex = 0;
-            quizCard.classList.remove('hidden');
+            homeScreen.classList.add('section-hidden');
+            quizScreen.classList.remove('section-hidden');
             displayQuestion();
         }
 
         function displayQuestion() {
-            quizCard.classList.add('loading');
+            feedbackContainer.innerHTML = '';
+            srsButtonsContainer.classList.add('hidden');
+            aiButtonsContainer.classList.add('hidden');
+            aiHelperContainer.classList.add('hidden');
+            prefetchedData = { explanation: null, memoryAid: null, audio: null }; // Reset pre-fetched data
             
-            // Wait for the fade-out transition to finish before updating content
-            setTimeout(() => {
-                feedbackContainer.innerHTML = '';
-                srsButtonsContainer.classList.add('hidden');
-                
-                const currentQuestion = dueQuestions[currentQuestionIndex];
-                chapterName.textContent = currentQuestion.chapter;
-                questionText.textContent = currentQuestion.question;
-                dueCounter.textContent = `${currentQuestionIndex + 1} / ${dueQuestions.length}`;
-                optionsContainer.innerHTML = '';
-                
-                const options = [...currentQuestion.options].filter(o => o);
-                options.sort(() => Math.random() - 0.5); // Shuffle options
-                
-                options.forEach(option => {
-                    const button = document.createElement('button');
-                    button.textContent = option;
-                    button.className = 'w-full bg-gray-700 p-4 rounded-lg text-left hover:bg-cyan-500/20 hover:border-cyan-400 border-2 border-transparent transition-all duration-200';
-                    button.addEventListener('click', handleOptionClick);
-                    optionsContainer.appendChild(button);
-                });
-
-                quizCard.classList.remove('loading');
-            }, 150);
+            const currentQuestion = sessionQuestions[currentQuestionIndex];
+            chapterName.textContent = currentQuestion.Chapter;
+            questionText.textContent = currentQuestion.Question;
+            dueCounter.textContent = `${currentQuestionIndex + 1} / ${sessionQuestions.length}`;
+            optionsContainer.innerHTML = '';
+            const options = [...currentQuestion.Options].filter(o => o);
+            options.sort(() => Math.random() - 0.5);
+            
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'w-full bg-gray-700 p-4 rounded-lg text-left hover:bg-cyan-500/20 hover:border-cyan-400 border-2 border-transparent transition-all duration-200';
+                button.addEventListener('click', handleOptionClick);
+                optionsContainer.appendChild(button);
+            });
         }
 
         function handleOptionClick(event) {
             const selectedButton = event.target;
             const selectedAnswer = selectedButton.textContent;
-            const currentQuestion = dueQuestions[currentQuestionIndex];
-            const correctAnswer = currentQuestion.correctAnswer;
+            const currentQuestion = sessionQuestions[currentQuestionIndex];
+            const correctAnswer = currentQuestion.CorrectAnswer;
+            const chapter = currentQuestion.Chapter;
             
             const isCorrect = selectedAnswer.trim() === correctAnswer.trim();
+            
+            if (!appData.chapters[chapter]) appData.chapters[chapter] = { score: 0 };
 
             const optionButtons = optionsContainer.querySelectorAll('button');
             optionButtons.forEach(btn => {
@@ -202,39 +303,189 @@
             });
 
             if (isCorrect) {
-                feedbackContainer.textContent = 'Correct! 🎉';
+                appData.chapters[chapter].score += 2;
+                feedbackContainer.textContent = 'Correct! +2 Points 🎉';
                 feedbackContainer.className = 'mt-6 text-lg h-8 font-semibold text-center text-green-400';
             } else {
+                appData.chapters[chapter].score -= 1/3;
                 selectedButton.className = 'w-full bg-red-500/30 border-red-500 border-2 p-4 rounded-lg text-left';
-                feedbackContainer.textContent = 'Not quite!';
+                feedbackContainer.textContent = 'Not quite! -0.33 Points';
                 feedbackContainer.className = 'mt-6 text-lg h-8 font-semibold text-center text-red-400';
             }
             
             srsButtonsContainer.classList.remove('hidden');
+            aiButtonsContainer.classList.remove('hidden');
+            prefetchAllAIAssistance(); // Start fetching AI help in the background
         }
 
         function handleSrsRating(needsRevision) {
-            const currentDBQuestion = allQuestions.find(q => q.id === dueQuestions[currentQuestionIndex].id);
+            const currentSessionQuestion = sessionQuestions[currentQuestionIndex];
+            const questionInDB = allQuestions.find(q => q.id === currentSessionQuestion.id);
             
             if (needsRevision) {
-                currentDBQuestion.srsLevel = 0;
+                questionInDB.srsLevel = 0;
             } else {
-                currentDBQuestion.srsLevel = Math.min(currentDBQuestion.srsLevel + 1, srsIntervals.length - 1);
+                questionInDB.srsLevel = Math.min(questionInDB.srsLevel + 1, srsIntervals.length - 1);
             }
             
-            const daysToAdd = srsIntervals[currentDBQuestion.srsLevel];
+            const daysToAdd = srsIntervals[questionInDB.srsLevel];
             const oneDayInMillis = 24 * 60 * 60 * 1000;
-            currentDBQuestion.nextReviewDate = Date.now() + (daysToAdd * oneDayInMillis);
+            questionInDB.nextReviewDate = Date.now() + (daysToAdd * oneDayInMillis);
             
             saveProgress();
             
             currentQuestionIndex++;
-            if (currentQuestionIndex < dueQuestions.length) {
+            if (currentQuestionIndex < sessionQuestions.length) {
                 displayQuestion();
             } else {
-                quizCard.classList.add('hidden');
-                allDoneState.classList.remove('hidden');
+                alert('Chapter session complete!');
+                showHomeScreen();
             }
+        }
+
+        // --- AI & TTS Helpers ---
+        function prefetchAllAIAssistance() {
+            const currentQuestion = sessionQuestions[currentQuestionIndex];
+            // Don't await these, let them run in the background
+            fetchAIHelper('explanation', currentQuestion).then(text => {
+                prefetchedData.explanation = text;
+            });
+            fetchAIHelper('memoryAid', currentQuestion).then(text => {
+                prefetchedData.memoryAid = text;
+            });
+        }
+
+        async function showAIAssistance(type) {
+            aiHelperContainer.classList.remove('hidden');
+            aiHelperText.textContent = '';
+            prefetchedData.audio = null; // Reset audio when showing new text
+
+            if (prefetchedData[type]) {
+                aiHelperText.textContent = prefetchedData[type];
+            } else {
+                ttsLoader.classList.remove('hidden');
+                ttsIcon.classList.add('hidden');
+                const currentQuestion = sessionQuestions[currentQuestionIndex];
+                const text = await fetchAIHelper(type, currentQuestion);
+                prefetchedData[type] = text;
+                aiHelperText.textContent = text;
+                ttsLoader.classList.add('hidden');
+                ttsIcon.classList.remove('hidden');
+            }
+            
+            // Pre-fetch audio for the explanation once it's shown
+            if (type === 'explanation') {
+                fetchTTS(prefetchedData.explanation).then(audioBlob => {
+                    prefetchedData.audio = audioBlob;
+                });
+            }
+        }
+
+        async function fetchAIHelper(type, question) {
+            let prompt = '';
+            if (type === 'explanation') {
+                prompt = `You are a helpful study assistant. For the following multiple-choice question, please provide a clear and concise explanation for why the correct answer is right. Do not just restate the answer. Explain the underlying concept in a simple way.\n\nQuestion: ${question.Question}\nCorrect Answer: ${question.CorrectAnswer}\n\nExplanation:`;
+            } else { // memoryAid
+                prompt = `You are a creative memory coach. For the following question and answer, invent a clever and simple mnemonic, a funny story, a weird mental image, or another memorable trick to help a student remember the answer. Be creative and concise.\n\nQuestion: "${question.Question}"\nAnswer: "${question.CorrectAnswer}"\n\nMemory Trick:`;
+            }
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed`);
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini API error:", error);
+                return "Sorry, I couldn't get a response right now. Please check your network connection.";
+            }
+        }
+
+        async function handleTTS() {
+            if (prefetchedData.audio) {
+                const audioUrl = URL.createObjectURL(prefetchedData.audio);
+                new Audio(audioUrl).play();
+                return;
+            }
+
+            const textToSpeak = aiHelperText.textContent;
+            if (!textToSpeak || textToSpeak.startsWith("Sorry")) return;
+
+            ttsLoader.classList.remove('hidden');
+            ttsIcon.classList.add('hidden');
+            
+            try {
+                const audioBlob = await fetchTTS(textToSpeak);
+                prefetchedData.audio = audioBlob;
+                const audioUrl = URL.createObjectURL(audioBlob);
+                new Audio(audioUrl).play();
+            } catch (error) {
+                 alert("Sorry, couldn't play the audio.");
+            } finally {
+                ttsLoader.classList.add('hidden');
+                ttsIcon.classList.remove('hidden');
+            }
+        }
+        
+        async function fetchTTS(text) {
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: `Say in a friendly, Indian-English accent: ${text}` }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Achird" } } }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error('TTS API call failed');
+                
+                const result = await response.json();
+                const audioData = result.candidates[0].content.parts[0].inlineData.data;
+                const pcmData = base64ToArrayBuffer(audioData);
+                return pcmToWav(new Int16Array(pcmData), 24000);
+            } catch (error) {
+                console.error("TTS Fetch Error:", error);
+                throw error; // Re-throw to be caught by the caller
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const dataSize = pcmData.length * (bitsPerSample / 8);
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+            view.setUint32(0, 0x52494646, false); // "RIFF"
+            view.setUint32(4, 36 + dataSize, true);
+            view.setUint32(8, 0x57415645, false); // "WAVE"
+            view.setUint32(12, 0x666d7420, false); // "fmt "
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            view.setUint32(36, 0x64617461, false); // "data"
+            view.setUint32(40, dataSize, true);
+            for (let i = 0; i < pcmData.length; i++) {
+                view.setInt16(44 + i * 2, pcmData[i], true);
+            }
+            return new Blob([view], { type: 'audio/wav' });
         }
     </script>
 </body>
